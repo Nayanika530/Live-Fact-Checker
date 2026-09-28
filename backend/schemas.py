@@ -24,7 +24,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from enum import Enum
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
@@ -297,7 +297,13 @@ class SessionEvent(EventModel):
 
 
 #: Any event that the backend can emit on the WebSocket.
-AnyEvent = (TranscriptEvent, ClaimEvent, VerificationEvent, ErrorEvent, SessionEvent)
+AnyEvent = Union[
+    TranscriptEvent,
+    ClaimEvent,
+    VerificationEvent,
+    ErrorEvent,
+    SessionEvent,
+]
 
 
 # ---------------------------------------------------------------------------
