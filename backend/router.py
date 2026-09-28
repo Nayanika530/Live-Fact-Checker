@@ -97,6 +97,11 @@ class EventRouter:
         )
         await self.broadcast(session_id, transcript)
 
+        # An AssemblyAI realtime stream sends growing interim segments. They are
+        # broadcast and counted, but only a finalized line may be claim-checked.
+        if not transcript.isFinal:
+            return PipelineCounts(), [], []
+
         try:
             claims = await self.claim_engine.extract_claims(transcript)
         except ClaimEngineError as exc:
