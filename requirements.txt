@@ -1,2 +1,13 @@
+# Verification module (existing)
 pydantic>=2.0.0
 pytest>=7.0.0
+
+# Backend: HTTP API, WebSocket event layer, session management
+fastapi>=0.115.0
+uvicorn[standard]>=0.30.0
+websockets>=12.0
+pydantic-settings>=2.0.0
+
+# Backend testing
+httpx>=0.27.0
+pytest-asyncio>=0.23.0
