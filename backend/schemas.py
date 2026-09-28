@@ -20,8 +20,6 @@ Two deliberate design notes:
    breaking the live demo. See :func:`unknown_fields`.
 """
 
-from __future__ import annotations
-
 from datetime import datetime, timezone
 from enum import Enum
 from typing import Any, Dict, List, Optional, Union
