@@ -8,6 +8,9 @@
  * - **Run demo** starts a session with the backend's scripted mock pipeline,
  *   which exercises transcript -> claim -> verification end to end with no
  *   AssemblyAI, LLM or search credentials configured.
+ *
+ * The demo button is the one to press on stage: it is the only path that works
+ * without any credential, so it cannot fail silently in front of a judge.
  */
 
 import type { SessionPhase } from '../hooks/useSession'
@@ -17,6 +20,12 @@ export interface SessionControlsProps {
   onStart: (options?: { demo?: boolean }) => void
   onStop: () => void
   onReconnect: () => void
+}
+
+const HINTS: Partial<Record<SessionPhase, string>> = {
+  idle: 'Nothing is running. Pick a mode to begin.',
+  active: 'Listening for events on this session.',
+  stopping: 'Closing the session and its clients…',
 }
 
 export function SessionControls({
@@ -68,6 +77,8 @@ export function SessionControls({
       >
         Stop session
       </button>
+
+      {HINTS[phase] !== undefined && <span className="controls__hint">{HINTS[phase]}</span>}
     </section>
   )
 }
