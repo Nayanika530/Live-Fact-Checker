@@ -5,26 +5,19 @@
  * stops sessions, streams the live transcript, and shows each claim's verdict as
  * it resolves. It never produces transcripts, claims or verdicts itself.
  *
- * There are two screens, not one long page.
+ * Layout is ordered by how quickly a judge needs each thing:
  *
- * **Idle** shows the introduction in {@link EmptyState}: before any speech has
- * been processed there is nothing to report, and an empty workspace is the
- * worst possible thing to put in front of a first-time viewer.
- *
- * **Live** is ordered by how quickly a judge needs each thing:
- *
- *   1. the latest verdict, because it is the answer the product exists to give
- *   2. the pipeline, so the shape of the system reads alongside the answer
- *   3. the live transcript and the claim cards, which are the evidence for it
+ *   1. the pipeline flow, so the shape of the system reads immediately
+ *   2. the live transcript, because speech comes first
+ *   3. the claim cards and scoreboard, which is the answer
  *
  * Selecting a claim highlights the transcript line it came from; that single
  * piece of cross-linking is what makes the two columns read as one story.
  */
 
-import { useCallback, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useState } from 'react'
 
 import { ClaimPanel } from './components/ClaimPanel'
-import { EmptyState } from './components/EmptyState'
 import { ErrorPanel } from './components/ErrorPanel'
 import { PipelineFlow } from './components/PipelineFlow'
 import { SessionControls } from './components/SessionControls'
@@ -33,8 +26,8 @@ import { TranscriptPanel } from './components/TranscriptPanel'
 import { VerdictScoreboard } from './components/VerdictScoreboard'
 import { useNow } from './hooks/useNow'
 import { useSession } from './hooks/useSession'
+import { useVoiceSession } from './hooks/useVoiceSession'
 import { BACKEND_URL } from './lib/config'
-import { describeCard } from './lib/verdicts'
 
 export default function App() {
   const {
@@ -50,11 +43,34 @@ export default function App() {
     clearErrors,
   } = useSession()
 
+  const {
+    status: voiceStatus,
+    error: voiceError,
+    start: startVoice,
+    stop: stopVoice,
+  } = useVoiceSession({
+    externalSessionId: session?.sessionId ?? null,
+  })
+
   const isLive = phase === 'active' || phase === 'stopping'
   const now = useNow(isLive)
 
   const [selectedClaimId, setSelectedClaimId] = useState<string | null>(null)
   const [isDemo, setIsDemo] = useState(false)
+
+  // Start voice session when backend session becomes active (for Go Live)
+  useEffect(() => {
+    if (phase === 'active' && !isDemo && voiceStatus === 'idle') {
+      void startVoice()
+    }
+  }, [phase, isDemo, voiceStatus, startVoice])
+
+  // Stop voice session when backend session stops
+  useEffect(() => {
+    if (phase === 'idle' && voiceStatus !== 'idle' && voiceStatus !== 'stopping') {
+      void stopVoice()
+    }
+  }, [phase, voiceStatus, stopVoice])
 
   // Resolve the selected claim to the transcript line it originated from, so
   // the transcript can scroll to and highlight it.
@@ -63,15 +79,6 @@ export default function App() {
     const card = view.claims.find((claim) => claim.claimId === selectedClaimId)
     return card?.transcriptKey ?? null
   }, [selectedClaimId, view.claims])
-
-  // The verdict of each checked line, so a transcript line can show the same
-  // word and tone as the claim card it produced. Derived here from the claim
-  // list rather than stored, so the reducer stays the only owner of state.
-  const verdictsByClaimId = useMemo(() => {
-    const map = new Map<string, ReturnType<typeof describeCard>>()
-    for (const card of view.claims) map.set(card.claimId, describeCard(card))
-    return map
-  }, [view.claims])
 
   // Clicking a claim toggles it, so a second click returns to following the
   // live edge of the transcript.
@@ -88,16 +95,12 @@ export default function App() {
     [start],
   )
 
-  const handleStop = useCallback(() => {
+  const handleStop = useCallback(async () => {
     setSelectedClaimId(null)
     setIsDemo(false)
-    void stop()
-  }, [stop])
-
-  // The introduction owns the actions until there is a live session to control.
-  // It stays up while the session is being created, so starting a run reads as
-  // the button changing state rather than the page flashing an empty workspace.
-  const showWorkspace = isLive
+    await stopVoice()
+    await stop()
+  }, [stopVoice, stop])
 
   return (
     <div className="app">
@@ -114,47 +117,32 @@ export default function App() {
       />
 
       <main className="app__main">
+        <PipelineFlow view={view} isLive={isLive} now={now} />
+
+        <SessionControls
+          phase={phase}
+          onStart={handleStart}
+          onStop={handleStop}
+          onReconnect={reconnect}
+        />
+
         <ErrorPanel
-          fault={fault}
+          fault={fault ?? voiceError}
           errors={view.errors}
           onDismissFault={dismissFault}
           onClearErrors={clearErrors}
         />
 
-        {!showWorkspace ? (
-          <EmptyState
-            onStartLive={() => handleStart({ demo: false })}
-            onStartDemo={() => handleStart({ demo: true })}
-            isStarting={phase === 'starting'}
-            fault={null}
+        <VerdictScoreboard claims={view.claims} />
+
+        <div className="app__columns">
+          <TranscriptPanel lines={view.transcripts} activeKey={activeLineKey} />
+          <ClaimPanel
+            claims={view.claims}
+            selectedClaimId={selectedClaimId}
+            onSelect={handleSelect}
           />
-        ) : (
-          <>
-            <VerdictScoreboard claims={view.claims} isLive={isLive} />
-
-            <PipelineFlow view={view} isLive={isLive} now={now} />
-
-            <SessionControls
-              phase={phase}
-              onStart={handleStart}
-              onStop={handleStop}
-              onReconnect={reconnect}
-            />
-
-            <div className="app__columns">
-              <TranscriptPanel
-                lines={view.transcripts}
-                activeKey={activeLineKey}
-                verdicts={verdictsByClaimId}
-              />
-              <ClaimPanel
-                claims={view.claims}
-                selectedClaimId={selectedClaimId}
-                onSelect={handleSelect}
-              />
-            </div>
-          </>
-        )}
+        </div>
       </main>
     </div>
   )

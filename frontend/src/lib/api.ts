@@ -26,6 +26,9 @@ export class ApiError extends Error {
   }
 }
 
+// Re-export SessionState for consumers
+export type { SessionState }
+
 /** Unwrap `{"detail": {"code": ..., "message": ...}}` from an error body. */
 function toApiError(status: number, body: unknown): ApiError {
   const detail =
