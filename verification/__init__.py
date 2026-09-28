@@ -15,7 +15,6 @@ from verification.query_generator import clean_conversational_text, generate_sea
 from verification.retriever import (
     EvidenceRetriever,
     MockRetriever,
-    WebSearchRetriever,
 )
 from verification.service import VerificationService, verify_claim_event
 
@@ -28,7 +27,6 @@ __all__ = [
     "clean_conversational_text",
     "EvidenceRetriever",
     "MockRetriever",
-    "WebSearchRetriever",
     "VerificationChecker",
     "verify_claim_against_evidence",
     "VerificationService",

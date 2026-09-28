@@ -8,7 +8,6 @@ ClaimEvent
 → VerificationEvent (with original claimId strictly preserved)
 """
 
-import json
 import sys
 from pathlib import Path
 from typing import List, Optional, Union
@@ -88,24 +87,3 @@ def verify_claim_event(
     """Convenience functional interface for verifying a single claim."""
     service = VerificationService(retriever=retriever)
     return service.verify_claim(claim_input)
-
-
-if __name__ == "__main__":
-    from verification.mock_data import MOCK_CLAIMS
-
-    print("=" * 70)
-    print("LIVE FACT-CHECKER - VERIFICATION MODULE DEMO")
-    print("=" * 70)
-
-    service = VerificationService()
-
-    for idx, claim_data in enumerate(MOCK_CLAIMS, start=1):
-        print(f"\n[Test Case {idx}]")
-        print(f"Input ClaimEvent:")
-        print(json.dumps(claim_data, indent=2))
-
-        result = service.verify_claim(claim_data)
-
-        print(f"Output VerificationEvent:")
-        print(json.dumps(result.model_dump(), indent=2))
-        print("-" * 50)

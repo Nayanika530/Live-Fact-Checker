@@ -90,9 +90,6 @@ uvicorn backend.main:app --reload
 
 # Explicit host and port
 uvicorn backend.main:app --host 127.0.0.1 --port 8000
-
-# Equivalent convenience entry point
-python -m backend.main
 ```
 
 Interactive API docs: <http://127.0.0.1:8000/docs>
@@ -352,7 +349,7 @@ Claim Event
 2. Evidence Retrieval (verification/retriever.py)
    - Retrieves authoritative evidence snippets via an abstract `EvidenceRetriever` interface
    - Ships with a zero-dependency `MockRetriever` for local offline testing
-   - Pluggable `WebSearchRetriever` stub for future live search engines
+   - Implement the `EvidenceRetriever` interface to add a real search backend
     │
     ▼
 3. Fact Checking & Stance Comparison (verification/checker.py)
@@ -420,7 +417,7 @@ Live-Fact-Checker/
 │   ├── __init__.py           # Package exports
 │   ├── models.py             # Pydantic schemas (ClaimEvent, VerificationEvent, EvidenceItem)
 │   ├── query_generator.py    # Speech artifact cleaning & query synthesis
-│   ├── retriever.py          # EvidenceRetriever ABC, MockRetriever & WebSearchRetriever stub
+│   ├── retriever.py          # EvidenceRetriever ABC + MockRetriever
 │   ├── checker.py            # Comparison logic & 3-verdict determination
 │   ├── service.py            # VerificationService orchestrator & CLI runner
 │   └── mock_data.py          # Curated test datasets covering all edge cases
@@ -430,29 +427,6 @@ Live-Fact-Checker/
 ├── .gitignore                # Git ignore rules (.venv, caches, env files)
 ├── requirements.txt          # Python dependencies (pydantic, pytest)
 └── README.md                 # System documentation
-```
-
----
-
-## Installation & Setup
-
-### Prerequisites
-* Python 3.10+ (tested with Python 3.11)
-
-### Setup Virtual Environment
-
-```bash
-# Create virtual environment
-python -m venv .venv
-
-# Activate on Windows (PowerShell)
-.venv\Scripts\Activate.ps1
-
-# Or activate on Linux/macOS
-source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
 ```
 
 ---
@@ -499,19 +473,21 @@ pytest -v
 To connect a live search API (e.g. Tavily, Google Custom Search, Serper, Bing) during later integration stages:
 
 1. Open `verification/retriever.py`.
-2. Implement the `retrieve(query: str, max_results: int = 3) -> list[EvidenceItem]` method in `WebSearchRetriever` (or create a custom `TavilyRetriever(EvidenceRetriever)` subclass).
+2. Subclass `EvidenceRetriever` and implement `retrieve(query: str, max_results: int = 3) -> list[EvidenceItem]` (e.g. a `TavilyRetriever`).
 3. Inject your retriever into the `VerificationService`:
 
 ```python
 from verification.service import VerificationService
-from verification.retriever import WebSearchRetriever
+from verification.retriever import EvidenceRetriever
 
-# Initialize with your custom retriever instance
-live_retriever = WebSearchRetriever(api_key="your_api_key", provider="tavily")
+# Your own retriever implementation
+live_retriever = TavilyRetriever(api_key=os.environ["SEARCH_API_KEY"])
 service = VerificationService(retriever=live_retriever)
 
 # Run verification - the verification logic remains completely unchanged!
 result = service.verify_claim(claim_event)
 ```
+
+Read the API key from the environment; never hardcode it.
 
 No modifications to `checker.py`, `models.py`, or `service.py` are needed when switching search backends.

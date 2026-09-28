@@ -173,27 +173,3 @@ class MockRetriever(EvidenceRetriever):
                 best_matches = record["items"]
 
         return best_matches[:max_results]
-
-
-class WebSearchRetriever(EvidenceRetriever):
-    """Stub for plugging in real web search APIs (e.g. Tavily, Serper, Bing).
-
-    Designed to drop into the pipeline without altering verification logic.
-    """
-
-    def __init__(self, api_key: Optional[str] = None, provider: str = "tavily"):
-        self.api_key = api_key
-        self.provider = provider
-
-    def retrieve(self, query: str, max_results: int = 3) -> List[EvidenceItem]:
-        """Placeholder for web API retrieval.
-        
-        Raises RuntimeError if attempted without configured API key.
-        """
-        if not self.api_key:
-            raise RuntimeError(
-                f"WebSearchRetriever ({self.provider}) requires an API key. "
-                "Use MockRetriever for offline development and testing."
-            )
-        # Future implementation: HTTP call to Tavily/Serper API
-        return []
