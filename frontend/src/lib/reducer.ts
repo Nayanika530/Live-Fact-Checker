@@ -14,6 +14,7 @@
  */
 
 import type { ClaimCard, LiveView, TranscriptLine } from '../types/model'
+import { initialLiveView } from '../types/model'
 import type {
   ClaimEvent,
   ErrorEvent,
@@ -204,6 +205,7 @@ export function applyEvent(view: LiveView, event: ServerEvent): LiveView {
 export type LiveViewAction =
   | { type: 'event'; event: ServerEvent }
   | { type: 'clearErrors' }
+  | { type: 'reset' }
 
 /**
  * The reducer used with `useReducer`.
@@ -217,6 +219,12 @@ export function liveViewReducer(view: LiveView, action: LiveViewAction): LiveVie
       return applyEvent(view, action.event)
     case 'clearErrors':
       return { ...view, errors: [] }
+    case 'reset':
+      // Starting a new session must not inherit the previous one's transcript,
+      // claims or verdicts. Claim ids are minted by the backend and restart per
+      // process, so two sessions can legitimately reuse the same id; carrying
+      // cards across would merge unrelated results.
+      return initialLiveView
     default:
       return view
   }
