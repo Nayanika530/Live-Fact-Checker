@@ -11,6 +11,9 @@
  *
  * The demo button is the one to press on stage: it is the only path that works
  * without any credential, so it cannot fail silently in front of a judge.
+ *
+ * The bar is only shown once a session exists. Before that, the actions live in
+ * the introduction screen, where they are the only thing on the page.
  */
 
 import type { SessionPhase } from '../hooks/useSession'
@@ -40,43 +43,45 @@ export function SessionControls({
 
   return (
     <section className="controls" aria-label="Session controls">
-      <button
-        type="button"
-        className="button button--primary"
-        onClick={() => onStart({ demo: false })}
-        disabled={isStarting || isActive}
-      >
-        Go live
-      </button>
+      <div className="controls__group">
+        <button
+          type="button"
+          className="button button--primary"
+          onClick={() => onStart({ demo: false })}
+          disabled={isStarting || isActive}
+        >
+          {isActive ? 'Live now' : 'Go live'}
+        </button>
+        <button
+          type="button"
+          className="button"
+          onClick={() => onStart({ demo: true })}
+          disabled={isStarting || isActive}
+          title="Replays the backend's scripted mock pipeline. Needs no API keys."
+        >
+          Run demo
+        </button>
+      </div>
 
-      <button
-        type="button"
-        className="button"
-        onClick={() => onStart({ demo: true })}
-        disabled={isStarting || isActive}
-        title="Replays the backend's scripted mock pipeline. Needs no API keys."
-      >
-        Run demo
-      </button>
-
-      <button
-        type="button"
-        className="button"
-        onClick={onReconnect}
-        disabled={!isActive}
-        title="Reopen the WebSocket for the current session."
-      >
-        Reconnect
-      </button>
-
-      <button
-        type="button"
-        className="button button--danger"
-        onClick={onStop}
-        disabled={!isActive && !isStopping}
-      >
-        Stop session
-      </button>
+      <div className="controls__group controls__group--end">
+        <button
+          type="button"
+          className="button"
+          onClick={onReconnect}
+          disabled={!isActive}
+          title="Reopen the WebSocket for the current session."
+        >
+          Reconnect
+        </button>
+        <button
+          type="button"
+          className="button button--danger"
+          onClick={onStop}
+          disabled={!isActive && !isStopping}
+        >
+          {isStopping ? 'Stopping…' : 'Stop session'}
+        </button>
+      </div>
 
       {HINTS[phase] !== undefined && <span className="controls__hint">{HINTS[phase]}</span>}
     </section>

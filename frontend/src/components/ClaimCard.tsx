@@ -1,18 +1,20 @@
 /**
  * A single claim and its verdict.
  *
- * The two states a judge cares about are visually unmistakable:
+ * Three states a judge cares about, each unmistakable without relying on hue:
  *
- * - **pending** — animated, clearly "not an answer yet", never a grey verdict
- * - **resolved** — a colour-coded verdict band, the reason, and a real link to
- *   the source
+ * - **checking** — an animated ring and the word CHECKING, so an unresolved
+ *   claim never reads as a grey or failed verdict
+ * - **resolved** — a glyph, the verdict word, the reason, and the source
  *
  * The card is a button so selecting it highlights the transcript line the claim
- * came from, which is what makes the two-column layout legible.
+ * came from, which is what makes the two-column layout legible. Selecting is
+ * also the only way to reach a claim's evidence in context, so the button keeps
+ * a visible pressed state rather than looking identical when selected.
  */
 
 import { displaySpeaker, formatClock, isLinkableSource, sourceDomain } from '../lib/format'
-import { describeVerdict } from '../lib/verdicts'
+import { describeCard } from '../lib/verdicts'
 import type { ClaimCard as ClaimCardModel } from '../types/model'
 
 export interface ClaimCardProps {
@@ -22,13 +24,13 @@ export interface ClaimCardProps {
 }
 
 export function ClaimCard({ card, selected, onSelect }: ClaimCardProps) {
+  const descriptor = describeCard(card)
   const verification = card.verification
-  const descriptor = verification ? describeVerdict(verification.verdict) : null
-  const tone = card.pending ? 'checking' : (descriptor?.tone ?? 'unknown')
+  const source = verification?.source ?? ''
 
   return (
     <li
-      className={`card card--${tone}${selected ? ' card--selected' : ''}`}
+      className={`card card--${descriptor.tone}${selected ? ' card--selected' : ''}`}
       data-claim-id={card.claimId}
     >
       <button
@@ -43,21 +45,19 @@ export function ClaimCard({ card, selected, onSelect }: ClaimCardProps) {
           {card.claimType !== 'unspecified' && (
             <span className="card__type">{card.claimType.replace(/_/g, ' ')}</span>
           )}
-          <span
-            className={`verdict verdict--${tone}`}
-            title={
-              card.pending
-                ? 'Evidence is being gathered for this claim.'
-                : (descriptor?.description ?? '')
-            }
-          >
+          <span className={`verdict verdict--${descriptor.tone}`} title={descriptor.description}>
             {card.pending ? (
               <>
                 <span className="verdict__spinner" aria-hidden="true" />
                 CHECKING
               </>
             ) : (
-              descriptor?.short
+              <>
+                <span className="verdict__glyph" aria-hidden="true">
+                  {descriptor.glyph}
+                </span>
+                {descriptor.short}
+              </>
             )}
           </span>
         </span>
@@ -70,25 +70,27 @@ export function ClaimCard({ card, selected, onSelect }: ClaimCardProps) {
       {verification !== null && (
         <div className="card__result">
           <p className="card__reason">{verification.reason}</p>
-          <p className="card__source">
-            <span className="card__sourceLabel">Source</span>
-            {isLinkableSource(verification.source) ? (
-              <a
-                className="card__link"
-                href={verification.source}
-                target="_blank"
-                rel="noreferrer noopener"
-                title={verification.source}
-              >
-                {sourceDomain(verification.source)}
-                <span className="card__external" aria-hidden="true">
-                  ↗
-                </span>
-              </a>
-            ) : (
-              <span className="card__sourceText">{verification.source}</span>
-            )}
-          </p>
+          {source !== '' && (
+            <p className="card__source">
+              <span className="card__sourceLabel">Source</span>
+              {isLinkableSource(source) ? (
+                <a
+                  className="card__link"
+                  href={source}
+                  target="_blank"
+                  rel="noreferrer noopener"
+                  title={source}
+                >
+                  {sourceDomain(source)}
+                  <span className="card__external" aria-hidden="true">
+                    ↗
+                  </span>
+                </a>
+              ) : (
+                <span className="card__sourceText">{source}</span>
+              )}
+            </p>
+          )}
         </div>
       )}
     </li>

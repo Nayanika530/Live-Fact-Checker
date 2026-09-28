@@ -23,6 +23,14 @@ const CONNECTION_LABELS: Record<ConnectionState, string> = {
   error: 'Connection lost',
 }
 
+const CONNECTION_HINTS: Record<ConnectionState, string> = {
+  idle: 'No session running',
+  connecting: 'Opening the session stream',
+  open: 'Receiving events',
+  closed: 'Reopening the session stream',
+  error: 'Cannot reach the backend',
+}
+
 export interface StatusBarProps {
   phase: SessionPhase
   connection: ConnectionState
@@ -63,6 +71,8 @@ export function StatusBar({
   else if (isLive) pillLabel = speaking ? displaySpeaker(lastSpeaker) : 'Listening'
   else pillLabel = CONNECTION_LABELS[connection]
 
+  const isDegraded = connection === 'error' || connection === 'closed'
+
   return (
     <header className="topbar">
       <div className="topbar__brand">
@@ -78,7 +88,15 @@ export function StatusBar({
 
       <div className="topbar__status">
         <span
-          className={`livepill${isLive ? ' livepill--on' : ''}${speaking ? ' livepill--speaking' : ''}`}
+          className={[
+            'livepill',
+            isLive ? 'livepill--on' : '',
+            speaking ? 'livepill--speaking' : '',
+            isDegraded ? 'livepill--degraded' : '',
+          ]
+            .filter(Boolean)
+            .join(' ')}
+          title={CONNECTION_HINTS[connection]}
         >
           <span className="livepill__dot" aria-hidden="true" />
           {pillLabel}
@@ -87,11 +105,13 @@ export function StatusBar({
         <dl className="topbar__facts">
           <div className="topbar__fact">
             <dt>Session</dt>
-            <dd>{sessionId ?? '—'}</dd>
+            <dd title={sessionId ?? undefined}>{sessionId ?? '—'}</dd>
           </div>
           <div className="topbar__fact">
             <dt>Judges</dt>
-            <dd>{connectedClients ?? 0}</dd>
+            <dd title="WebSocket clients watching this session">
+              {connectedClients ?? 0}
+            </dd>
           </div>
           <div className="topbar__fact">
             <dt>Backend</dt>

@@ -6,6 +6,9 @@
  * and the verdict carries a reason and a source. Each step lights up as the
  * backend actually reaches it, so progress is observed rather than claimed.
  *
+ * The row is numbered and connected by a progress track, because "which stage
+ * are we at" is the question a viewer asks when nothing has resolved yet.
+ *
  * The stages are derived purely from the view model. Nothing here polls or
  * invents state.
  */
@@ -22,8 +25,8 @@ interface Stage {
 }
 
 const STAGES: Stage[] = [
-  { id: 'speaking', label: 'Speaking', hint: 'Microphone audio' },
-  { id: 'transcript', label: 'Transcript', hint: 'Speech to text' },
+  { id: 'speaking', label: 'Speak', hint: 'Microphone audio' },
+  { id: 'transcript', label: 'Transcribe', hint: 'Speech to text' },
   { id: 'claim', label: 'Claim', hint: 'Factual statement' },
   { id: 'checking', label: 'Checking', hint: 'Gathering evidence' },
   { id: 'verdict', label: 'Verdict', hint: 'True / false / unclear' },
@@ -103,24 +106,47 @@ export function PipelineFlow({ view, isLive, now }: PipelineFlowProps) {
     caption = 'Start a session to begin fact-checking live speech.'
   }
 
+  const doneCount = STAGES.filter((stage) => states[stage.id] === 'done').length
+  const activeIndex = STAGES.findIndex((stage) => states[stage.id] === 'active')
+  const progress = activeIndex >= 0 ? activeIndex / (STAGES.length - 1) : doneCount / STAGES.length
+
   return (
     <section className="flow" aria-label="Fact-checking pipeline">
       <ol className="flow__steps">
-        {STAGES.map((stage) => (
+        {STAGES.map((stage, index) => (
           <li
             key={stage.id}
             className={`flow__step flow__step--${states[stage.id] ?? 'pending'}`}
             aria-current={states[stage.id] === 'active' ? 'step' : undefined}
           >
-            <span className="flow__dot" aria-hidden="true" />
-            <span className="flow__label">{stage.label}</span>
-            <span className="flow__hint">{stage.hint}</span>
+            <span className="flow__dot" aria-hidden="true">
+              {states[stage.id] === 'done' ? '✓' : index + 1}
+            </span>
+            <span className="flow__text">
+              <span className="flow__label">{stage.label}</span>
+              <span className="flow__hint">{stage.hint}</span>
+            </span>
           </li>
         ))}
       </ol>
-      <p className="flow__caption" aria-live="polite">
-        {caption}
-      </p>
+      <div className="flow__aside">
+        <div
+          className="flow__track"
+          role="progressbar"
+          aria-label="Pipeline progress"
+          aria-valuemin={0}
+          aria-valuemax={STAGES.length}
+          aria-valuenow={activeIndex >= 0 ? activeIndex + 1 : doneCount}
+        >
+          <span
+            className="flow__trackFill"
+            style={{ width: `${Math.round(progress * 100)}%` }}
+          />
+        </div>
+        <p className="flow__caption" aria-live="polite">
+          {caption}
+        </p>
+      </div>
     </section>
   )
 }
