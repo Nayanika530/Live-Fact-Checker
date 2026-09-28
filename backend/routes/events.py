@@ -13,8 +13,6 @@ default 422 shape. Every accepted event is validated, routed, and broadcast to
 the session's WebSocket clients before the response returns.
 """
 
-from __future__ import annotations
-
 from typing import Any, Dict, Optional, Type, TypeVar
 
 from fastapi import APIRouter, HTTPException, Request, status
