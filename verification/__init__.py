@@ -14,7 +14,6 @@ from verification.models import (
 from verification.query_generator import clean_conversational_text, generate_search_query
 from verification.retriever import (
     EvidenceRetriever,
-    MockRetriever,
     RetrieverConfigurationError,
     RetrieverError,
     WebSearchRetriever,
