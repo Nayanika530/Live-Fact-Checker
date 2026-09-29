@@ -124,7 +124,7 @@ class WebSocketManager:
         return delivered
 
     async def broadcast(
-        self, session_id: str, events: Iterable[AnyEvent]
+        self, session_id: str, events: Iterable[Any]
     ) -> int:
         """Send several events in order to a session. Returns total deliveries."""
         total = 0
