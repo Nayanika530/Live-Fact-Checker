@@ -123,6 +123,15 @@ class WebSocketManager:
         )
         return delivered
 
+    async def broadcast(
+        self, session_id: str, events: Iterable[Any]
+    ) -> int:
+        """Send several events in order to a session. Returns total deliveries."""
+        total = 0
+        for event in events:
+            total += await self.send_to_session(session_id, event)
+        return total
+
     # -- introspection ----------------------------------------------------
     def connection_count(self, session_id: Optional[str] = None) -> int:
         """Number of live clients, for one session or across all sessions."""
