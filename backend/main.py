@@ -7,13 +7,7 @@ ASGI application.
 Run locally::
 
     uvicorn backend.main:app --reload
-
-or::
-
-    python -m backend.main
 """
-
-from __future__ import annotations
 
 import json
 from contextlib import asynccontextmanager
@@ -33,6 +27,7 @@ from backend.config import Settings, get_settings
 from backend.logging_config import configure_logging, get_logger
 from backend.mocks.mock_stream import MockClaimEngine, MockVerificationEngine
 from backend.router import EventRouter
+from backend.routes import assemblyai as assemblyai_routes
 from backend.routes import events as events_routes
 from backend.routes import health as health_routes
 from backend.routes import session as session_routes
@@ -176,6 +171,7 @@ def create_app(
     app.include_router(health_routes.router)
     app.include_router(session_routes.router)
     app.include_router(events_routes.router)
+    app.include_router(assemblyai_routes.router)
 
     _register_exception_handlers(app)
     _register_websocket_route(app)
@@ -295,21 +291,3 @@ async def _handle_client_message(
 
 
 app = create_app()
-
-
-def main() -> None:  # pragma: no cover - manual entry point
-    """Run the backend with uvicorn using the configured host and port."""
-    import uvicorn
-
-    settings = get_settings()
-    configure_logging(level=settings.log_level, json_output=settings.log_json)
-    uvicorn.run(
-        "backend.main:app",
-        host=settings.host,
-        port=settings.port,
-        reload=not settings.is_production,
-    )
-
-
-if __name__ == "__main__":  # pragma: no cover
-    main()
